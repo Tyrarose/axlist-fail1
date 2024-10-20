@@ -2,16 +2,27 @@
 *.pyc
 __pycache__/
 .pytest_cache/
+*.pyo
+*.pyd
 
 # Node.js
 node_modules/
 
 # Virtual environments
+config/
 venv/
 env/
 .venv/
+
+# Firebase service account key
+serviceAccountKey.json
 
 # IDE specific
 *.swp
 *.DS_Store
 .vercel
+
+
+# Other files or folders to ignore
+*.sqlite3
+*.db

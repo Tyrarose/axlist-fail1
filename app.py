@@ -1,61 +1,69 @@
 import os
 import webbrowser
 from flask import Flask, render_template, request, redirect, jsonify
-from threading import Thread
-from flask_sqlalchemy import SQLAlchemy
+import firebase_admin
+from firebase_admin import credentials, firestore
+from dotenv import load_dotenv  # Import load_dotenv
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Initialize the Flask app
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///checklist.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
-class Rule(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    text = db.Column(db.String(100), nullable=False)
-    checked = db.Column(db.Boolean, default=False)
+# Initialize Firebase Admin SDK
+cred = credentials.Certificate(os.environ['FIREBASE_SERVICE_ACCOUNT_KEY'])
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+# Define the Firestore collection name
+RULES_COLLECTION = 'rules'
 
 @app.route('/')
 def checklist():
-    rules = Rule.query.all()
-    return render_template('checklist.html', rules=rules)
+    # Retrieve all rules from Firestore
+    rules_ref = db.collection(RULES_COLLECTION)
+    rules = rules_ref.stream()
+    rules_list = [{"id": rule.id, **rule.to_dict()} for rule in rules]
+    return render_template('checklist.html', rules=rules_list)
 
 @app.route('/add_rule', methods=['POST'])
 def add_rule():
     new_rule = request.form['new_rule']
-    rule = Rule(text=new_rule)
-    db.session.add(rule)
-    db.session.commit()
+    rule_data = {
+        'text': new_rule,
+        'checked': False
+    }
+    db.collection(RULES_COLLECTION).add(rule_data)
     return redirect('/')
 
-@app.route('/toggle_rule/<int:rule_id>', methods=['POST'])
+@app.route('/toggle_rule/<rule_id>', methods=['POST'])
 def toggle_rule(rule_id):
-    rule = Rule.query.get(rule_id)
-    if rule:
+    rule_ref = db.collection(RULES_COLLECTION).document(rule_id)
+    if rule_ref.get().exists:
         data = request.get_json()
-        rule.checked = data['checked']
-        db.session.commit()
+        rule_ref.update({'checked': data['checked']})
     return jsonify(success=True)
 
-@app.route('/delete_rule/<int:rule_id>', methods=['POST'])
+@app.route('/delete_rule/<rule_id>', methods=['POST'])
 def delete_rule(rule_id):
-    rule = Rule.query.get(rule_id)
-    if rule:
-        db.session.delete(rule)
-        db.session.commit()
+    rule_ref = db.collection(RULES_COLLECTION).document(rule_id)
+    if rule_ref.get().exists:
+        rule_ref.delete()
     return redirect('/')
 
 @app.route('/reset_rules', methods=['POST'])
 def reset_rules():
-    rules = Rule.query.all()
-    for rule in rules:
-        rule.checked = False
-    db.session.commit()
+    rules_ref = db.collection(RULES_COLLECTION)
+    for rule in rules_ref.stream():
+        rules_ref.document(rule.id).update({'checked': False})
     return redirect('/')
 
 @app.route('/delete_all', methods=['POST'])
 def delete_all():
-    db.session.query(Rule).delete()  # Deletes all rules from the database
-    db.session.commit()
+    rules_ref = db.collection(RULES_COLLECTION)
+    for rule in rules_ref.stream():
+        rules_ref.document(rule.id).delete()  # Deletes each rule from Firestore
     return redirect('/')
 
 def run():
@@ -64,4 +72,3 @@ def run():
 if __name__ == "__main__":
     webbrowser.open("http://127.0.0.1:5000")  # This line will open the browser
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))  # Run the app directly
-
