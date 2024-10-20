@@ -13,6 +13,7 @@ config/
 venv/
 env/
 .venv/
+.env
 
 # Firebase service account key
 serviceAccountKey.json
