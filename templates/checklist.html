@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axlist</title>
+    <meta name="description" content="WeTrading Rules Checklist for my boyfie axl uwu.">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="static/styles.css"> <!-- Link to external CSS -->
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json">
+
+</head>
+<body>
+    <div class="container">
+        <h1>My Trading Rules Checklist</h1>
+
+        <form action="/add_rule" method="POST" class="mb-3">
+            <div class="input-group">
+                <input type="text" name="new_rule" class="form-control" placeholder="Add a new rule" required>
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-primary btn-add">Add Rule</button>
+                </div>
+            </div>
+        </form>
+
+        <ul class="list-group mb-3">
+            {% for rule in rules %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <input type="checkbox" class="custom-checkbox" id="rule-{{ rule.id }}" {% if rule.checked %} checked {% endif %} onclick="toggleRule({{ rule.id }})">
+                    <label class="checkbox-label {% if rule.checked %} checked {% endif %}" for="rule-{{ rule.id }}">{{ rule.text }}</label>
+                    <form action="/delete_rule/{{ rule.id }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <div class="text-center mb-3">
+            <form action="/reset_rules" method="POST" style="display: inline;">
+                <button type="submit" class="btn btn-secondary">Uncheck all boxes</button>
+            </form>
+            <form action="/delete_all" method="POST" style="display: inline;">
+                <button type="submit" class="btn btn-danger ml-5">Delete All Rules</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        function toggleRule(ruleId) {
+            const checkbox = document.getElementById(`rule-${ruleId}`);
+            const checked = checkbox.checked;
+
+            fetch(`/toggle_rule/${ruleId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ checked: checked })
+            }).then(response => {
+                if (!response.ok) {
+                    console.error('Failed to update rule status');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                }).catch(function(error) {
+                    console.log('Service Worker registration failed:', error);
+                });
+            });
+        }
+    </script>
+    
+</body>
+</html>

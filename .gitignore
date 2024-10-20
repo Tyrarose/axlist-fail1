@@ -1,0 +1,16 @@
+# Python-specific
+*.pyc
+__pycache__/
+.pytest_cache/
+
+# Node.js
+node_modules/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE specific
+*.swp
+*.DS_Store
