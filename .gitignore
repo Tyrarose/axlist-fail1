@@ -14,3 +14,4 @@ env/
 # IDE specific
 *.swp
 *.DS_Store
+.vercel
