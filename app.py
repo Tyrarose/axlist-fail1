@@ -1,7 +1,7 @@
-import os  # Add this line
-
+import os
 import webbrowser
 from flask import Flask, render_template, request, redirect, jsonify
+from threading import Thread
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -58,7 +58,9 @@ def delete_all():
     db.session.commit()
     return redirect('/')
 
+def run():
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
 
 if __name__ == "__main__":
-    webbrowser.open("http://127.0.0.1:5000")  # This line will open the browser
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    webbrowser.open("http://127.0.0.1:5000")  # Open the browser
+    Thread(target=run).start()  # Start the Flask app in a separate thread
